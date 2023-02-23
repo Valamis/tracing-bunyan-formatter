@@ -156,11 +156,11 @@ impl<S: Subscriber + for<'a> tracing_subscriber::registry::LookupSpan<'a>> Layer
 
         // Using a block to drop the immutable reference to extensions
         // given that we want to borrow it mutably just below
-        let elapsed_milliseconds = {
+        let elapsed_nanoseconds = {
             let extensions = span.extensions();
             extensions
                 .get::<Instant>()
-                .map(|i| i.elapsed().as_millis())
+                .map(|i| i.elapsed().as_nanos())
                 // If `Instant` is not in the span extensions it means that the span was never
                 // entered into.
                 .unwrap_or(0)
@@ -169,10 +169,10 @@ impl<S: Subscriber + for<'a> tracing_subscriber::registry::LookupSpan<'a>> Layer
         #[cfg(not(feature = "arbitrary-precision"))]
         // without the arbitrary_precision feature u128 values are not supported,
         // but u64 is still more than enough for our purposes
-        let elapsed_milliseconds: u64 = {
+        let elapsed_nanoseconds: u64 = {
             use std::convert::TryInto;
 
-            elapsed_milliseconds.try_into().unwrap_or_default()
+            elapsed_nanoseconds.try_into().unwrap_or_default()
         };
 
         let mut extensions_mut = span.extensions_mut();
@@ -180,8 +180,8 @@ impl<S: Subscriber + for<'a> tracing_subscriber::registry::LookupSpan<'a>> Layer
             .get_mut::<JsonStorage>()
             .expect("Visitor not found on 'record', this is a bug");
 
-        if let Ok(elapsed) = serde_json::to_value(elapsed_milliseconds) {
-            visitor.values.insert("elapsed_milliseconds", elapsed);
+        if let Ok(elapsed) = serde_json::to_value(elapsed_nanoseconds) {
+            visitor.values.insert("ecs.event.duration", elapsed);
         }
     }
 }

@@ -146,7 +146,7 @@ impl<W: for<'a> MakeWriter<'a> + 'static> EcsFormattingLayer<W> {
     {
         for field in fields {
             let field = field.into();
-            if BUNYAN_REQUIRED_FIELDS.contains(&field.as_str()) {
+            if RESERVED_FIELDS.contains(&field.as_str()) {
                 return Err(SkipFieldError(field));
             }
             self.skip_fields.insert(field);
@@ -231,11 +231,11 @@ impl<W: for<'a> MakeWriter<'a> + 'static> EcsFormattingLayer<W> {
             for (key, value) in visitor.values() {
                 if !RESERVED_FIELDS.contains(key) {
                     if key.starts_with("ecs.") {
-                        self.serialize_field(&mut map_serializer, key.replace("ecs.", ""), value)?;
+                        self.serialize_field(&mut map_serializer, &key.replace("ecs.", ""), value)?;
                     } else {
                         self.serialize_field(
                             &mut map_serializer,
-                            format!("custom.{}", key),
+                            &format!("custom.{}", key),
                             value,
                         )?;
                     }
@@ -377,9 +377,9 @@ where
                 .filter(|(&key, _)| key != "message" && !RESERVED_FIELDS.contains(&key))
             {
                 if key.starts_with("ecs.") {
-                    self.serialize_field(&mut map_serializer, key.replace("ecs.", ""), value)?;
+                    self.serialize_field(&mut map_serializer, &key.replace("ecs.", ""), value)?;
                 } else {
-                    self.serialize_field(&mut map_serializer, format!("custom.{}", key), value)?;
+                    self.serialize_field(&mut map_serializer, &format!("custom.{}", key), value)?;
                 }
             }
 
@@ -392,13 +392,13 @@ where
                             if key.starts_with("ecs.") {
                                 self.serialize_field(
                                     &mut map_serializer,
-                                    key.replace("ecs.", ""),
+                                    &key.replace("ecs.", ""),
                                     value,
                                 )?;
                             } else {
                                 self.serialize_field(
                                     &mut map_serializer,
-                                    format!("custom.{}", key),
+                                    &format!("custom.{}", key),
                                     value,
                                 )?;
                             }
