@@ -230,15 +230,7 @@ impl<W: for<'a> MakeWriter<'a> + 'static> EcsFormattingLayer<W> {
         if let Some(visitor) = extensions.get::<JsonStorage>() {
             for (key, value) in visitor.values() {
                 if !RESERVED_FIELDS.contains(key) {
-                    if key.starts_with("ecs.") {
-                        self.serialize_field(&mut map_serializer, &key.replace("ecs.", ""), value)?;
-                    } else {
-                        self.serialize_field(
-                            &mut map_serializer,
-                            &format!("custom.{}", key),
-                            value,
-                        )?;
-                    }
+                    self.serialize_field(&mut map_serializer, &key, value)?;
                 } else {
                     tracing::debug!(
                         "{} is a reserved field in the ECS log format. Skipping it.",
@@ -376,11 +368,7 @@ where
                 .iter()
                 .filter(|(&key, _)| key != "message" && !RESERVED_FIELDS.contains(&key))
             {
-                if key.starts_with("ecs.") {
-                    self.serialize_field(&mut map_serializer, &key.replace("ecs.", ""), value)?;
-                } else {
-                    self.serialize_field(&mut map_serializer, &format!("custom.{}", key), value)?;
-                }
+                self.serialize_field(&mut map_serializer, &key, value)?;
             }
 
             // Add all the fields from the current span, if we have one.
@@ -389,19 +377,7 @@ where
                 if let Some(visitor) = extensions.get::<JsonStorage>() {
                     for (key, value) in visitor.values() {
                         if !RESERVED_FIELDS.contains(key) {
-                            if key.starts_with("ecs.") {
-                                self.serialize_field(
-                                    &mut map_serializer,
-                                    &key.replace("ecs.", ""),
-                                    value,
-                                )?;
-                            } else {
-                                self.serialize_field(
-                                    &mut map_serializer,
-                                    &format!("custom.{}", key),
-                                    value,
-                                )?;
-                            }
+                            self.serialize_field(&mut map_serializer, &key, value)?;
                         } else {
                             tracing::debug!(
                                 "{} is a reserved field in the ECS log format. Skipping it.",

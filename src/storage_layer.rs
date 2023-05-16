@@ -6,6 +6,7 @@ use tracing::span::{Attributes, Record};
 use tracing::{Id, Subscriber};
 use tracing_subscriber::layer::Context;
 use tracing_subscriber::Layer;
+use valuable::Value;
 
 /// This layer is only concerned with information storage, it does not do any formatting or provide any output.
 ///
@@ -46,6 +47,17 @@ impl Default for JsonStorage<'_> {
     }
 }
 
+struct VecStuff<'a> {
+    pub list: &'a mut Vec<String>,
+}
+
+impl<'a> valuable::Visit for VecStuff<'a> {
+    fn visit_value(&mut self, value: Value<'_>) {
+        self.list
+            .push(value.as_str().unwrap_or_default().to_string())
+    }
+}
+
 /// Taken verbatim from tracing-subscriber
 impl Visit for JsonStorage<'_> {
     /// Visit a signed 64-bit integer value.
@@ -76,6 +88,25 @@ impl Visit for JsonStorage<'_> {
     fn record_str(&mut self, field: &Field, value: &str) {
         self.values
             .insert(field.name(), serde_json::Value::from(value));
+    }
+
+    fn record_value(&mut self, field: &Field, value: valuable::Value) {
+        let mut list = Vec::new();
+
+        match value {
+            Value::Listable(v) => {
+                println!("list");
+                v.visit(&mut VecStuff { list: &mut list });
+                self.values
+                    .insert(field.name(), serde_json::Value::from(list));
+            }
+            _ => {
+                self.values.insert(
+                    field.name(),
+                    serde_json::Value::from(format!("{:?}", value)),
+                );
+            }
+        }
     }
 
     fn record_debug(&mut self, field: &Field, value: &dyn fmt::Debug) {
